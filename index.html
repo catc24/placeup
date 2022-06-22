@@ -1,0 +1,758 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="manifest" href="/manifest.json">
+        <link rel="apple-touch-icon" href="icon.png"/>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-title" content="Canv" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+	<meta name="theme-color" content="#000">
+        <meta property="og:title" content="Canv.tk - Multiplayer, Infinite Canvas" />
+        <meta property="og:description" content="Almost no cooldown!!!! canv.tk" />
+        <meta property="og:image" content="http://canv.tk/icon.png" />
+	<title>Canv.tk</title>
+	<style>
+		*{box-sizing: border-box}
+		html{
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			user-select: none;
+			overflow: hidden;
+			touch-action: none;
+			width: 100%;
+			height: 100%;
+		}
+		body{
+			margin: 0;
+			font-family: monospace;
+			font-size: 16px;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: #000;
+			color: white;
+		}
+		ui{
+			display: block;
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			z-index: 1;
+		}
+		debug{
+			position: fixed;
+			top: 0;
+			right: 0;
+			color: #fff;
+			display: flex;
+			z-index: 10;
+			width: 0;
+			overflow: visible;
+			flex-direction: column;
+			align-items: flex-end;
+		}
+		canvas{
+			image-rendering: optimizeSpeed;
+			image-rendering: -webkit-optimize-contrast;
+			image-rendering: pixelated;
+			image-rendering: optimize-contrast;
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			z-index: 1;
+			animation: var(--anim);
+		}
+		btn{
+			-webkit-tap-highlight-color: transparent;
+			display: block;
+			cursor: pointer;
+		}
+		#out, #in, #pick, #back{
+			position: absolute;
+			right: 20px;
+			width: 60px;
+			height: 60px;
+			background: #444;
+			color: #ccc;
+			line-height: 60px;
+			text-align: center;
+			font-size: 30px;
+			font-weight: bold;
+			border-radius: 30px;
+			box-shadow: 0 0 15px black;
+		}
+		#out.active, #in.active{
+			background: #333;
+		}
+		#pick{
+			bottom: 80px;
+			left: 20px;
+			font-size: 35px;
+			line-height: 55px;
+			font-weight: 400;
+			font-family: Arial;
+		}
+		#back{
+			top: 13px;
+			left: 13px;
+			width: 40px;
+			height: 40px;
+			line-height: 40px;
+			font-size: 20px;
+		}
+		#in{
+			bottom: 100px;
+		}
+		#out{
+			bottom: 20px;
+		}
+		#crossa, #crossb{
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: 2px;
+			height: 2px;
+			background: rgba(120,120,120,0.4);
+			z-index: -1;
+		}
+		#crossa{
+			height: 20px;
+			margin: -10px 0 0 -1px;
+		}
+		#crossb{
+			width: 20px;
+			margin: -1px 0 0 -10px;
+		}
+		#colbar{
+			width: 444px;
+			background: #444;
+			height: 48px;
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			display: flex;
+			justify-content: space-evenly;
+			align-items: center;
+			box-shadow: 0 0 15px black;
+			outline: 2px solid #888;
+		}
+		#colbar div{
+			width: var(--w);
+			height: var(--w);
+			box-shadow: 0 0 5px black;
+			cursor: pointer;
+			-webkit-tap-highlight-color: transparent;
+		}
+		#colbar div p{
+			margin: 0;
+			background: inherit;
+			background-clip: text;
+			-webkit-background-clip: text;
+			color: transparent;
+			filter: invert(1) grayscale(1) contrast(10);
+		}
+		ui{
+			--w: 40px;
+		}
+		#colselector{
+			outline: 2px solid #888;
+			background: #444;
+			position: absolute;
+			width: 356px;
+			left: 88px;
+			bottom: 56px;
+			max-height: calc(100% - 60px);
+			overflow: auto;
+			padding: 4px;
+			flex-wrap: wrap;
+			gap: 4px;
+			justify-content: center;
+			touch-action: pan-y;
+		}
+		#colselector div{
+			width: var(--w);
+			height: var(--w);
+			box-shadow: 0 0 5px black;
+			cursor: pointer;
+			-webkit-tap-highlight-color: transparent;
+		}
+		@media (max-width: 540px){
+			#colbar{
+				width: 100vw;
+				height: calc(14.2857vw + 4px)
+			}
+			.nm{display: none}
+			ui{
+				--w: calc(14.2857vw - 4px);
+			}
+			#in{bottom: calc(19vw + 80px)}
+			#out{bottom: 19vw}
+			#pick{bottom: 19vw}
+			#colselector{
+				bottom: calc(14.2857vw + 12px);
+				z-index: 1;
+				width: 100%;
+				left: 0;
+				--w: calc(12.5vw - 4.5px);
+			}
+			float{
+				bottom: 20vw !important;
+				right: 50% !important;
+				transform: translateX(50%);
+			}
+		}
+		#ip{
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: #111;
+			z-index: 11;
+		}
+		input{
+			background: transparent;
+			color: white;
+			border: none;
+			border-bottom: 3px #ccc solid;
+			outline: none;
+			border-radius: 0;
+			font-size: 16px;
+			font-family: monospace;
+			padding: 3px;
+		}
+		div.server{
+			max-width: 400px;
+			text-align: center;
+			margin: auto;
+			margin-top: 10px;
+			text-decoration: underline;
+			cursor: pointer;
+		}
+		float{
+			display: block;
+			position: absolute;
+			bottom: 20px;
+			right: 100px;
+			padding: 10px;
+			background: rgba(0,0,0,0.3);
+			border-radius: 100px;
+			color: white;
+		}
+	</style>
+</head>
+<body ontouchend="getSelection().removeAllRanges();event.preventDefault();if('value' in event.target)event.target.focus();let {clientX, clientY, screenX, screenY} = event.changedTouches[0];event.target.dispatchEvent(new MouseEvent('click', {bubbles:true,clientX,clientY,screenX,screenY}))" onmousewheel="if(event.ctrlKey)event.preventDefault()">
+	<debug></debug>
+	<canvas></canvas>
+	<ui>
+		<div style="position:absolute;top: 45%;text-align: center;font-size: 2rem;width:100%" id="conn">Connecting...</div>
+		<div id="colselector" style="display:none" onclick="let i = [...this.children].indexOf(event.target);usecol((i&7)|((i&8)<<1)|((i&16)<<1)|((i&32)>>2))">
+		</div>
+		<div id="colbar">
+			<div onclick="selectcol(0)"><p>1</p></div>
+			<div onclick="selectcol(1)"><p>2</p></div>
+			<div onclick="selectcol(2)"><p>3</p></div>
+			<div onclick="selectcol(3)"><p>4</p></div>
+			<div onclick="selectcol(4)"><p>5</p></div>
+			<div onclick="selectcol(5)"><p>6</p></div>
+			<div onclick="selectcol(6)" class="nm"><p>7</p></div>
+			<div onclick="selectcol(7)" class="nm"><p>8</p></div>
+			<div onclick="selectcol(8)" class="nm"><p>9</p></div>
+			<div style="text-align: center;color:white;line-height:var(--w);box-shadow:none" onclick="let el=document.getElementById('colselector');el.style.display=el.style.display=='none'?'flex':'none'">...</div>
+		</div>
+		<div id="crossa"></div>
+		<div id="crossb"></div>
+		<btn id="pick" active onclick="if(PEN=='257')return this.style.background='',this.style.color='',selectcol(0);PEN='257';this.style.background='#aaa';this.style.color='#333'">⌖</btn>
+		<btn id="back" active onclick="location.hash='#home'">&lt;</btn>
+		<btn id="in" active onclick="if(ZOOM<64)zoom(ZOOM / 1.5 % 1 ? ZOOM * 1.5 : ZOOM * 4 / 3)">+</btn>
+		<btn id="out" active onclick="let max = Math.max(innerWidth, innerHeight) / (Math.sqrt(map.size) - 1) / 128;let nw = ZOOM / 1.5 % 1 ? ZOOM / 4 * 3 : ZOOM / 1.5;if(nw > max)zoom(nw)">-</btn>
+		<float></float>
+	</ui>
+	<div id="ip" style="padding-top: calc(70vh - 260px);">
+		<input placeholder="Enter IP" onclick="this.focus()" onkeypress="if(event.keyCode==13){let a = localStorage.servers?localStorage.servers.split('\n'):[];if(a.length>9)a.pop();a.unshift(this.value);localStorage.servers=a.join('\n');wsinit(this.value)}" style="display: block;text-align:center;margin: auto;width: 300px;max-width: 80vw;margin-bottom:30px;" />
+		<div class="server" style="text-decoration:none;font-size:1.2rem">Suggestions:</div>
+	</div>
+</body>
+<script>module={exports:{}}</script>
+<script src="https://unpkg.com/buf.js/index.js"></script>
+<script>
+location.protocol=='http:'&&location.hostname!='localhost'&&(location.protocol='https:')
+let tches = new Set()
+document.querySelectorAll('[active]').forEach(function(el){
+	el.ontouchstart=()=>el.classList.add('active')
+	el.ontouchend=()=>el.classList.remove('active')
+	el.ontouchcancel=()=>el.classList.remove('active')
+	el.onmousedown=()=>el.classList.add('active')
+	el.onmouseup=()=>el.classList.remove('active')
+	el.onmouseleave=()=>el.classList.remove('active')
+})
+Object.assign(window,module.exports);
+let [dnode, canvas, ui] = document.body.children
+const BLK = 1
+const BLK2 = BLK * 2
+const BLK4 = BLK2 * 2
+const CHUNKS = 3
+let cx = 0, cy = 0
+let rx = 0, ry = 0
+let chx = 0
+let chy = 0
+let map = new Map()
+class Chunk extends Uint8Array{
+	static VOID = new Chunk()
+	constructor(data){
+		if(data && data.byteLength == 4096){
+			super(data.buffer)
+		}else{
+			super(4096)
+		}
+		this.ref = new Set()
+	}
+	setcell(x, y, cell){
+		this[(y<<6) + (x&63)] = cell
+	}
+	getcell(x, y){
+		return this[(y<<6) + (x&63)]
+	}
+}
+function chunk(x, y){
+	let i = (x&0x3FFFFFF)+(y&0x3FFFFFF)*0x4000000
+	return map.get(i) || Chunk.VOID
+}
+function get(x, y){
+	let i = (x>>>6)+(y>>>6)*0x4000000
+	let r = map.get(i)
+	if(!r)return 0
+	return r[((y&63)<<6)+(x&63)]
+}
+let cd = +localStorage.cd || Date.now()
+localStorage.cd = cd
+function set(x, y, b, drw = true){
+	let i = (x>>>6)+(y>>>6)*0x4000000
+	let r = map.get(i)
+	x |= 0
+	y |= 0
+	let xt = x&63
+	let yt = y&63
+	let pos = (yt<<6)+xt
+	if(!r)return 0
+	if((r[pos] & 63) == b)return r[pos]
+	if(drw){
+		if(cd > Date.now()){
+			float.style.color = "#a22"
+			setTimeout(() => float.style.color = "white", 1000)
+			return r[pos]
+		}
+		b &= 63
+		localStorage.cd = cd = r[pos] == 0 ? Date.now() : Date.now() + [500,1000,2000,3000][r[pos] >> 6]
+		r[pos] = r[pos] ? (r[pos] >= 192 ? 192 + b : (r[pos] & 192) + 64 + b) : b
+		draws.push([x, y, r[pos]])
+	}else r[pos] = b
+	let ccx = (x - rx >> 0) * BLK + canvas.width / 2
+	let ccy = (ry - y >> 0) * BLK + canvas.height / 2 - BLK
+	if(ccx<0||ccy<0||ccx>=canvas.width||ccy>=canvas.height)return r[pos]
+	drawblock(x, y, ccx, ccy, r)
+	return r[pos]
+}
+function drawchunk(x, y, c = chunk(x, y)){
+	x |= 0
+	y |= 0
+	let ccx0 = (x * 64 - rx >> 0) * BLK + canvas.width / 2
+	let ccy0 = (ry - y * 64 - 63 >> 0) * BLK + canvas.height / 2 - BLK
+	let ccx1 = (x * 64 + 63 - rx >> 0) * BLK + canvas.width / 2
+	let ccy1 = (ry - y * 64 >> 0) * BLK + canvas.height / 2 - BLK
+	if(ccx1<0||ccy1<0||ccx0>=canvas.width||ccy0>=canvas.height)return
+	x *= 64
+	y *= 64
+	ccx1 = Math.min(ccx1, canvas.width - BLK)
+	x -= (ccx0 - (ccx0 = Math.max(ccx0, 0))) / BLK
+	y += (ccy1 - (ccy1 = Math.min(ccy1, canvas.height - BLK))) / BLK
+	ccy0 = Math.max(ccy0, 0)
+	x>>=0;y>>=0;
+	let resy = y
+	for(let cix = ccx0; cix <= ccx1; cix += BLK){
+		for(let ciy = ccy1; ciy >= ccy0; ciy -= BLK){
+			drawblock(x, y, cix, ciy, c)
+			y=y+1>>0
+		}
+		x=x+1>>0
+		y = resy
+	}
+}
+let cam = {
+	get x(){return cx},
+	set x(a){cx=(Math.floor(a)>>0)+(a%1+1)%1
+		if(Math.abs(cx - rx) > canvas.width / BLK2 - innerWidth / BLK4 / ZOOM){
+			draw()
+		}
+		c.canvas.style.transform = "translate(" + Math.round(rx*BLK2*ZOOM-cx*BLK2*ZOOM) + "px, " + Math.round(cy*BLK2*ZOOM-ry*BLK2*ZOOM) + "px)"
+		pos("x: "+Math.floor(cx)+", y: "+Math.floor(cy))
+	},
+	get y(){return cy},
+	set y(a){cy=(Math.floor(a)>>0)+(a%1+1)%1
+		if(Math.abs(cy - ry) > canvas.height / BLK2 - innerHeight / BLK4 / ZOOM){
+			draw()
+		}
+		c.canvas.style.transform = "translate(" + Math.round(rx*BLK2*ZOOM-cx*BLK2*ZOOM) + "px, " + Math.round(cy*BLK2*ZOOM-ry*BLK2*ZOOM) + "px)"
+		pos("x: "+Math.floor(cx)+", y: "+Math.floor(cy))
+	}
+}
+let ZOOM = 4
+function zoom(a){
+	ZOOM=a
+	onresize()
+}
+let col = a => "#"+"05af"[a&3]+"05af"[(a>>2)&3]+"05af"[(a>>4)&3]
+let col2 = a => (a&3)*85 + ((a>>2)&3)*21760 + ((a>>4)&3)*5570560 + 4278190080
+
+let cols = (localStorage.cols||"2,8,32,0,21,63,10,40,34").split(",")
+let colbar = document.getElementById('colbar')
+function rendercol(){
+	for(let i in cols){
+		colbar.children[i].style.backgroundColor = col(cols[i])
+	}
+}
+let PEN = 1
+function selectcol(j){
+	PEN=cols[j]
+	for(var i=0;i<10;i++){
+		colbar.children[i].style.border=i==j?"2px solid #888":"none"
+		colbar.children[i].style.transform=i==j?"scale(1.3) translateY(-3px)":""
+		colbar.children[i].style.zIndex=i==j?"3":""
+	}
+}
+rendercol()
+selectcol(0)
+let c;
+try{c = canvas.getContext("2d")}catch(e){c = canvas.getContext}
+let w, h
+onresize = function(){
+	w = Math.ceil(innerWidth/BLK2/ZOOM)*BLK2
+	h = Math.ceil(innerHeight/BLK2/ZOOM)*BLK2
+	canvas.width = w
+	canvas.height = h
+	canvas.style.margin = "-" + h*ZOOM + "px 0 0 -" + w*ZOOM + "px"
+	canvas.style.width = w*2*ZOOM+"px"
+	canvas.style.height = h*2*ZOOM+"px"
+	c.imageSmoothingEnabled = false
+	draw(false)
+}
+function drawblock(x, y, ccx, ccy, chunk, rw=true){
+	let xt = x & 63
+	let yt = y & 63
+	let pos = (yt<<6) + xt
+	c.fillStyle = col(chunk[pos]) || "#222"
+	c.fillRect(ccx, ccy, BLK, BLK)
+}
+function draw(a=true){
+	let orx = rx, ory = ry
+	rx = Math.round(cx)
+	ry = Math.round(cy)
+	let x0 = Math.max(orx, rx) - canvas.width / BLK2 >> 0
+	let x1 = Math.min(orx, rx) + canvas.width / BLK2 >> 0
+	if(x0>x1)[x0, x1] = [x1, x0]
+	let y0 = Math.max(ory, ry) - canvas.height / BLK2 >> 0
+	let y1 = Math.min(ory, ry) + canvas.height / BLK2 >> 0
+	if(y0>y1)[y0, y1] = [y1, y0]
+	let ox0 = (x0 - orx >> 0) * BLK + canvas.width / 2
+	let oy1 = (ory - y0 >> 0) * BLK + canvas.height / 2
+	let ox1 = ox0 + (x1-x0>>0) * BLK
+	let oy0 = oy1 - (y1-y0>>0) * BLK
+	let nx0 = (x0 - rx >> 0) * BLK + canvas.width / 2
+	let ny1 = (ry - y0 >> 0) * BLK + canvas.height / 2
+	let nx1 = nx0 + (x1-x0>>0) * BLK
+	let ny0 = ny1 - (y1-y0>>0) * BLK
+	let boxes = Math.abs(rx-orx>>0)<canvas.width/BLK2&&Math.abs(ry-ory>>0)<canvas.height/BLK2 && a
+	let im
+	if(boxes)im = c.getImageData(ox0,oy0,ox1-ox0,oy1-oy0)
+	c.fillStyle = "#000000"
+	if(boxes)c.putImageData(im, nx0, ny0)
+	let x = Math.round(cx) - canvas.width / BLK2 >> 0
+	let y = Math.round(cy) - canvas.height / BLK2 >> 0
+	let chunks = []
+	let chunkx = Infinity
+	let data = BLK == 1 ? c.getImageData(0,0,c.canvas.width,c.canvas.height) : null
+	let dat = new Uint32Array(data.data.buffer)
+	for(let ccx = 0;ccx < canvas.width;(ccx += BLK),x=x+1>>0){
+		let ccy = canvas.height-BLK
+		let tcy = 0
+		if(boxes && ccx >= nx0 && ccx < nx1){
+			if(ry > ory)(ccy = ny0 - BLK), y = y1
+			else tcy = ny1
+		}
+		if(chunkx != (x>>6))chunks.length = 0
+		for(let i = 0;ccy >= tcy;(ccy -= BLK),y=y+1>>0,i++){
+			let p = false
+			let ch = chunks[i] || (p=true,chunk(x>>6,y>>6))
+			if(p)chunks.push(ch)
+			if(BLK == 1) dat[ccy * c.canvas.width + ccx] = col2(ch[((y & 63)<<6) + (x & 63)])
+			else{
+				drawblock(x, y, ccx, ccy, ch, false)
+			}
+		}
+		y = Math.round(cy) - canvas.height / BLK2 >> 0
+	}
+	if(BLK == 1){
+		c.putImageData(data, 0 ,0)
+	}
+}
+function debug(t="\u200b"){
+	let txt = document.createElement("txt")
+	txt.style.background="rgba(0,0,0,0.5)"
+	txt.style.whiteSpace = "nowrap"
+	txt.innerHTML = t
+	dnode.appendChild(document.createTextNode(" "))
+	dnode.appendChild(txt)
+	return (function(a){txt.innerHTML=a})
+}
+var frameTime = 0, lastLoop = Date.now(), lastRef = lastLoop;
+let last = 0
+let fps = debug("FPS: 90")
+let pos = debug("x: 0, y: 0")
+let chks = debug("loading...")
+debug("v: 1.3.2")
+requestAnimationFrame(function f(){
+	var ft = Date.now() - lastLoop;
+	last += ft
+	frameTime += (ft - frameTime) / 20;
+	if(ft < 1000){
+		lastLoop = Date.now();
+		/*
+		while(last >= 20)//*/
+		update(void(last -= 20))
+		last = 0
+	}else lastLoop = Date.now(), last = 0;
+	if((lastLoop>lastRef+300) && (lastRef=lastLoop)){
+		fps("FPS: "+Math.round(1000/frameTime))
+		chks("C: "+map.size+" / P: "+PEN)
+	}
+	requestAnimationFrame(f)
+})
+let awaitings = new Map()
+let seq = -1
+let lastSent = 0
+let float = document.querySelector('float')
+setInterval(()=>{
+	float.innerHTML = cd > Date.now() ? "cooldown: " + Math.ceil(cd/1000-Date.now()/1000) + "s" : "<span style='opacity:0.2'>"+online+" online</span>"
+	try{hash!=location.hash&&location.reload();if(IP)hash=`#${IP}#${Math.floor(cam.x)}#${Math.floor(cam.y)}`;history.replaceState({},'',hash)}catch(e){}
+},200)
+function update(){
+	if(!ws)return
+	if(!dragDown && touch == null){
+    if(Math.abs(dx) / Math.abs(dy) < 0.3)dx = 0
+    if(Math.abs(dy) / Math.abs(dx) < 0.3)dy = 0
+		cam.x += dx / ZOOM / BLK4
+		cam.y += dy / ZOOM / BLK4
+		//if(fillOnMove)set(Math.floor(cam.x), Math.floor(cam.y), PEN)
+	}
+	dx *= 0.95
+	dy *= 0.95
+	let NOW = Date.now()
+	if(ws.readyState == WebSocket.OPEN){
+		if(draws.length > 0 && NOW > lastSent + 100){
+			lastSent = NOW
+			let buf = new BufWriter()
+			buf.byte(1)
+			buf.short(++seq)
+			seq&=65535
+			awaitings.set(seq, draws)
+			for(let [x, y, b] of draws){
+				buf.int(x)
+				buf.int(y)
+				buf.byte(b)
+			}
+			ws.send(buf.toBuf())
+			draws = []
+		}
+		if(lx != (lx=cx>>6) || ly != (ly=cy>>6))move()
+	}
+}
+let lx = 0, ly = 0, online = '...'
+function move(){
+	let buf = new BufWriter()
+	buf.byte(2)
+	buf.int(cx>>6)
+	buf.int(cy>>6)
+	ws.send(buf.toBuf())
+}
+let IP = "", hash = location.hash
+let ws
+if(!hash)wsinit("server.canv.tk",0,0)
+else if(hash=="#home") document.getElementById('ip').insertAdjacentHTML('beforeend', (localStorage.servers||"server.canv.tk").split('\n').map(a=>`<div class='server' onclick="wsinit(this.textContent)">${a.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;")}</div>`).join(''))
+else{
+	let [a, x, y] = hash.slice(1).split("#")
+	if(a)wsinit(a, x, y)
+}
+function wsinit(a, x = 0, y = 0){
+	IP = a
+	x*=1; y*=1
+	const pos = x === x && y === y
+	ws = new WebSocket('ws'+location.protocol.slice(4)+'//'+a+':1292' + (pos ? `/${lx = x>>6}/${ly = y>>6}` : ""));
+	cx = x + 0.5
+	cy = y + 0.5
+	onresize()
+	document.getElementById('ip').style.display='none'
+	ws.onclose = () => location.reload()
+	ws.onmessage = async function(e) {
+		document.getElementById('conn').style.display='none'
+		let buf = new Buf(await e.data.arrayBuffer())
+		let byte = buf.byte()
+		if(byte == 3){
+			let x = buf.int(), y = buf.int()
+			let i = (x&0x3FFFFFF)+(y&0x3FFFFFF)*0x4000000
+			let c = new Chunk(buf.slice(9))
+			map.set(i, c)
+			drawchunk(x, y)
+		}else if(byte == 4){
+			while(buf.i < buf.length){
+				let x = buf.int(), y = buf.int()
+				let i = (x&0x3FFFFFF)+(y&0x3FFFFFF)*0x4000000
+				map.delete(i)
+			}
+		}else if(byte == 5){
+			set(buf.int(), buf.int(), buf.byte(), false)
+		}else if(byte == 6){
+			let i = buf.ushort()
+			for(let [x, y, b] of awaitings.get(i)){
+				set(x, y, b, false)
+			}
+			while(buf.i < buf.length){
+				set(buf.int(), buf.int(), buf.ubyte(), false)
+			}
+			awaitings.delete(i)
+		}else if(byte == 99){
+			online = buf.ushort()
+		}
+	}
+}
+let dx = 0, dy = 0
+let dragDown = false, touch = null, tt = null, fillOnMove = false
+oncontextmenu = e => e.preventDefault()
+onmousedown = (e) => {
+	if(e.target != ui)return
+	//if(e.button == 2){
+		dragDown = true
+		dx = dy = 0
+		return
+	//}else if(e.target == ui && PEN != 256){
+		//set2(e.clientX, e.clientY)
+		//dragDown = 0
+	//}
+}
+let canDot = false
+onmouseup = e => {if(e.target!=ui)return dragDown = false;if(dragDown === true)set2(e.clientX, e.clientY);dragDown = false}
+ontouchstart = e => {
+	if(e.target != ui)return
+	if(touch){
+		fillOnMove = true
+                set(Math.floor(cam.x), Math.floor(cam.y), PEN)
+		return
+	}
+	touch = e.touches[e.touches.length-1]
+	canDot = Math.abs(dx) + Math.abs(dy) < 0.3
+	tt = setTimeout(() => {
+		if(!touch)return
+		tt = -1
+		canDot = false
+		set2(touch.clientX, touch.clientY)
+	}, 300)
+	dx = dy = 0
+}
+ontouchend = e => {
+	for(t of e.changedTouches)if(touch && touch.identifier == t.identifier){
+		touch = null
+		if(canDot){
+			clearTimeout(tt)
+			set2(t.clientX, t.clientY)
+		}
+	}else fillOnMove = false
+	tt = null
+	canDot = false
+}
+function mv(x, y, sm = true){
+	if(sm){
+		dx = x, dy = y
+		if(Math.abs(dx)+Math.abs(dy)<0.3)dx = dy = 0
+	}
+	cam.x += x / ZOOM / BLK4
+	cam.y += y / ZOOM / BLK4
+}
+let draws = []
+ontouchmove = e => {
+	if(!touch)return
+	let t = [...e.changedTouches].find(a=>a.identifier==touch.identifier)
+	if(e.target != ui || !t)return
+	if(tt < 0){
+		let {clientX, clientY} = t
+		//set2(clientX, clientY)
+		touch = t
+		return
+	}
+	tt !== null && (clearTimeout(tt), tt = null, canDot = false)
+	if(fillOnMove){
+		mv((touch.screenX - t.screenX) * 2, (t.screenY - touch.screenY) * 2)
+		//set(Math.floor(cam.x), Math.floor(cam.y), PEN)
+	}else{
+		mv((touch.screenX - t.screenX) * 2, (t.screenY - touch.screenY) * 2)
+	}
+	touch = t
+}
+let mx, my
+onmousemove = function(e){
+	if(+mx !== +mx){
+		mx = e.clientX
+		my = e.clientY
+		return
+	}
+	let dx = mx - (mx = e.clientX)
+	let dy = my - (my = e.clientY)
+	if(e.target != ui)return
+	if(dragDown){
+		dragDown = 1
+		mv(2*dx, -2*dy)
+	}else if(dragDown === 0 && e.target == ui && PEN != 256){
+		//set2(e.clientX, e.clientY)
+	}
+}
+function set2(clientX, clientY){
+	let x = (clientX-innerWidth/2)/ZOOM/BLK2+cam.x
+	let y = (innerHeight/2-clientY)/ZOOM/BLK2+cam.y
+	if(PEN=='257'){
+		usecol(get(Math.floor(x), Math.floor(y)))
+		document.getElementById('pick').style.background=""
+		document.getElementById('pick').style.color=""
+	}
+	set(Math.floor(x), Math.floor(y), PEN)
+}
+addEventListener('wheel', e => (e.preventDefault(), e.target == ui ? mv(e.deltaX, -e.deltaY, false) : undefined), {passive:false})
+onkeypress = function(e){
+	if(+e.key){
+		selectcol(e.key-1)
+	}
+	if(e.key == 'q' || e.key == ','){
+		let max = Math.max(innerWidth, innerHeight) / (Math.sqrt(map.size) - 1) / 128;let nw = ZOOM / 1.5 % 1 ? ZOOM / 4 * 3 : ZOOM / 1.5;if(nw > max)zoom(nw)
+	}else if(e.key == 'e' || e.key == '.'){
+		if(ZOOM<64)zoom(ZOOM / 1.5 % 1 ? ZOOM * 1.5 : ZOOM * 4 / 3)
+	}
+}
+let el = document.getElementById("colselector")
+for(let i = 0;i < 64;i++){
+	el.insertAdjacentHTML("beforeend", `<div style="background-color:${col((i&7)|((i&8)<<1)|((i&16)<<1)|((i&32)>>2))}"></div>`)
+}
+function usecol(p){
+	p+=''
+	let i = cols.indexOf(p)
+	if(i>-1){
+		cols.splice(i, 1)
+	}else cols.pop()
+	cols.unshift(p)
+	rendercol()
+	selectcol(0)
+	localStorage.cols = cols
+}
+</script>
+</html>
